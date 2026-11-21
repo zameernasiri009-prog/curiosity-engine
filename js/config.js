@@ -47,4 +47,3 @@ export const CONFIG = Object.freeze({
     })
   })
 });
-
