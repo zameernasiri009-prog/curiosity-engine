@@ -11,7 +11,7 @@
     <header id="top-hud" aria-label="Game Telemetry HUD">
       <div class="hud-box">
         <span class="hud-label">Chamber</span>
-        <span class="hud-value" id="hud-chamber">01 / 04</span>
+        <span class="hud-value" id="hud-chamber">01 / 06</span>
       </div>
       <div class="hud-box">
         <span class="hud-label">Integrity</span>
@@ -46,9 +46,8 @@
           <div class="overlay-tag">Protocol // Unanswered Room</div>
           <h1 class="overlay-title">CURIOSITY ENGINE</h1>
           <p class="overlay-copy">
-            Every chamber conceals an anomaly that reacts when probed. Fire your <strong>Curiosity Probe</strong>
-            to expose hidden truths, destabilize false locks, and harvest shards—without letting unchecked curiosity
-            shatter your integrity.
+            Six chambers conceal real anomalies, drifting cores, and misleading decoys. Fire your
+            <strong>Curiosity Probe</strong> to test what is real and what is illusion without losing integrity.
           </p>
           <div class="mode-selector" role="group" aria-label="Difficulty Mode">
             <button type="button" class="mode-btn" data-mode="calm">Calm Observer</button>
@@ -86,6 +85,31 @@
           <button type="button" class="primary-cta" id="btn-play-again">Run Another Experiment</button>
         </div>
       </section>
+
+      <section id="overlay-codex" class="overlay-panel">
+        <div class="overlay-card overlay-card-wide">
+          <div class="overlay-tag">Field Dossier</div>
+          <h2 class="overlay-title">ANOMALY CODEX</h2>
+          <p class="overlay-copy" id="codex-summary">Unlocked 0 / 21 Anomaly Dossiers</p>
+          <div id="codex-list" class="scroll-list"></div>
+          <div style="margin-top:16px; display:flex; justify-content:center;">
+            <button type="button" class="primary-cta" id="btn-close-codex">Close Codex</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="overlay-analytics" class="overlay-panel">
+        <div class="overlay-card overlay-card-wide">
+          <div class="overlay-tag">Persistence & Telemetry</div>
+          <h2 class="overlay-title">SESSION TELEMETRY</h2>
+          <div id="analytics-metrics" class="stats-grid stats-grid-3"></div>
+          <div id="analytics-event-log" class="event-log-box"></div>
+          <div style="margin-top:16px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+            <button type="button" class="btn-ui" id="btn-clear-events">Clear Event Log</button>
+            <button type="button" class="primary-cta" id="btn-close-analytics">Close Telemetry</button>
+          </div>
+        </div>
+      </section>
     </main>
 
     <footer id="bottom-controls">
@@ -97,6 +121,8 @@
         <span><span class="key-chip">P</span> Pause</span>
       </div>
       <div class="action-cluster">
+        <button type="button" class="btn-ui" id="btn-open-codex">Codex</button>
+        <button type="button" class="btn-ui" id="btn-open-analytics">Telemetry</button>
         <button type="button" class="btn-ui" id="btn-audio-toggle">Audio: ON</button>
         <button type="button" class="btn-ui" id="btn-focus-pulse">Pulse [E]</button>
         <button type="button" class="btn-ui" id="btn-fire-action">FIRE PROBE</button>
@@ -107,5 +133,3 @@
   <script type="module" src="./js/main.js"></script>
 </body>
 </html>
-
-
