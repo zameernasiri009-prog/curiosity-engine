@@ -1,4 +1,3 @@
-
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
@@ -13,7 +12,7 @@ const DB_FILE = path.join(DATA_DIR, "store.json");
 
 const PORT = Number(process.env.PORT) || 8787;
 const HOST = process.env.HOST || "0.0.0.0";
-const MAX_BODY_BYTES = 1024 * 256; // 256 KB limit
+const MAX_BODY_BYTES = 1024 * 256;
 const MAX_STORED_EVENTS = 1000;
 const MAX_STORED_RUNS = 250;
 
@@ -271,6 +270,16 @@ async function handleApiRequest(req, res, parsedUrl) {
     });
   }
 
+  if (method === "DELETE" && pathname === "/api/runs") {
+    store.runs = [];
+    const saved = persistStore();
+    return sendJson(res, 200, {
+      ok: true,
+      persisted: saved,
+      clearedRuns: true
+    });
+  }
+
   if (method === "GET" && pathname === "/api/events") {
     const limit = clampNumber(parsedUrl.searchParams.get("limit"), 1, 250, 60);
     return sendJson(res, 200, {
@@ -368,3 +377,4 @@ server.listen(PORT, HOST, () => {
   console.log(`[CuriosityEngine Server] Running at http://localhost:${PORT}`);
   console.log(`[CuriosityEngine Server] Storage file: ${DB_FILE}`);
 });
+
