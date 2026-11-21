@@ -47,7 +47,7 @@
           <h1 class="overlay-title">CURIOSITY ENGINE</h1>
           <p class="overlay-copy">
             Six chambers conceal real anomalies, drifting cores, and misleading decoys. Fire your
-            <strong>Curiosity Probe</strong> to test what is real and what is illusion without losing integrity.
+            <strong>Curiosity Probe</strong> or <strong>Overdrive Probe</strong> to test what is real without losing integrity.
           </p>
           <div class="mode-selector" role="group" aria-label="Difficulty Mode">
             <button type="button" class="mode-btn" data-mode="calm">Calm Observer</button>
@@ -100,11 +100,18 @@
 
       <section id="overlay-analytics" class="overlay-panel">
         <div class="overlay-card overlay-card-wide">
-          <div class="overlay-tag">Persistence & Telemetry</div>
+          <div class="overlay-tag">Persistence, Leaderboard & Telemetry</div>
           <h2 class="overlay-title">SESSION TELEMETRY</h2>
           <div id="analytics-metrics" class="stats-grid stats-grid-3"></div>
+          <div class="backend-bar">
+            <input type="text" id="input-backend-url" class="backend-input" placeholder="http://localhost:8787" />
+            <button type="button" class="btn-ui" id="btn-save-backend-url">Set URL</button>
+            <button type="button" class="btn-ui" id="btn-sync-now">Sync Now</button>
+          </div>
+          <div class="analytics-sync-note" id="analytics-sync-detail">Status: LOCAL-OK</div>
+          <div id="analytics-leaderboard" class="leaderboard-box"></div>
           <div id="analytics-event-log" class="event-log-box"></div>
-          <div style="margin-top:16px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+          <div style="margin-top:14px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
             <button type="button" class="btn-ui" id="btn-clear-events">Clear Event Log</button>
             <button type="button" class="primary-cta" id="btn-close-analytics">Close Telemetry</button>
           </div>
@@ -115,9 +122,9 @@
     <footer id="bottom-controls">
       <div class="control-hints">
         <span><span class="key-chip">WASD / Arrows</span> Move</span>
-        <span><span class="key-chip">Mouse</span> Aim</span>
         <span><span class="key-chip">Space / F / Click</span> Fire Probe</span>
-        <span><span class="key-chip">E</span> Focus Pulse</span>
+        <span><span class="key-chip">Shift / Right-Click</span> Overdrive</span>
+        <span><span class="key-chip">E</span> Pulse</span>
         <span><span class="key-chip">P</span> Pause</span>
       </div>
       <div class="action-cluster">
@@ -125,6 +132,7 @@
         <button type="button" class="btn-ui" id="btn-open-analytics">Telemetry</button>
         <button type="button" class="btn-ui" id="btn-audio-toggle">Audio: ON</button>
         <button type="button" class="btn-ui" id="btn-focus-pulse">Pulse [E]</button>
+        <button type="button" class="btn-ui" id="btn-overdrive-action">OVERDRIVE</button>
         <button type="button" class="btn-ui" id="btn-fire-action">FIRE PROBE</button>
       </div>
     </footer>
