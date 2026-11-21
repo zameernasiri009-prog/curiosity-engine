@@ -39,6 +39,7 @@ export class CuriosityEngineGame {
       statProbes: document.getElementById("stat-probes"),
       statBest: document.getElementById("stat-best"),
       btnFireAction: document.getElementById("btn-fire-action"),
+      btnOverdriveAction: document.getElementById("btn-overdrive-action"),
       btnFocusPulse: document.getElementById("btn-focus-pulse"),
       btnAudioToggle: document.getElementById("btn-audio-toggle")
     };
@@ -148,8 +149,19 @@ export class CuriosityEngineGame {
       this.triggerFireAction(false);
     });
 
+    if (this.ui.btnOverdriveAction) {
+      this.ui.btnOverdriveAction.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        this.ui.btnOverdriveAction.classList.add("firing");
+        this.triggerFireAction(true);
+      });
+    }
+
     window.addEventListener("pointerup", () => {
       this.ui.btnFireAction.classList.remove("firing");
+      if (this.ui.btnOverdriveAction) {
+        this.ui.btnOverdriveAction.classList.remove("firing");
+      }
       this.pointer.down = false;
     });
 
@@ -168,12 +180,10 @@ export class CuriosityEngineGame {
       }
       this.keys.add(code);
 
-      if (code === "Escape") {
-        if (this.hasOpenModal()) {
-          this.codex.close();
-          this.analytics.close();
-          return;
-        }
+      if (code === "Escape" && this.hasOpenModal()) {
+        this.codex.close();
+        this.analytics.close();
+        return;
       }
 
       if (code === "KeyP" || code === "Escape") {
@@ -328,10 +338,6 @@ export class CuriosityEngineGame {
     this.updateHud();
   }
 
-  /**
-   * Fires either a standard Curiosity Probe or an Overdrive Probe (power = 2 hits,
-   * faster velocity, higher charge cost).
-   */
   triggerFireAction(overdrive = false) {
     if (this.phase !== "playing" || this.hasOpenModal()) return;
     if (this.player.fireCooldown > 0) return;
@@ -696,6 +702,8 @@ export class CuriosityEngineGame {
       victory,
       mode: this.selectedMode
     });
+
+    this.backend.fetchLeaderboard(10).catch(() => {});
 
     this.ui.endTag.textContent = victory ? "ALL CHAMBERS RESOLVED" : "INTEGRITY DEPLETED";
     this.ui.endTitle.textContent = victory ? "THE ROOM ANSWERS" : "SIGNAL TERMINATED";
