@@ -14,6 +14,8 @@ export class CuriosityEngineGame {
     this.codex = new CodexManager(this.backend);
     this.analytics = new AnalyticsManager(this.backend);
 
+    this.backend.onStatusChange = () => this.updateHud();
+
     this.ui = {
       chamber: document.getElementById("hud-chamber"),
       integrity: document.getElementById("hud-integrity"),
@@ -45,6 +47,7 @@ export class CuriosityEngineGame {
     this.phase = "title";
     this.chambers = buildChambers();
     this.chamberIndex = 0;
+    this.activeMutator = CONFIG.MUTATORS[0];
 
     this.keys = new Set();
     this.pointer = {
@@ -102,6 +105,12 @@ export class CuriosityEngineGame {
     return CONFIG.MODES[this.selectedMode] || CONFIG.MODES.standard;
   }
 
+  pickMutatorForChamber(idx) {
+    if (idx === 0) return CONFIG.MUTATORS[0];
+    const pool = CONFIG.MUTATORS.slice(1);
+    return pool[idx % pool.length] || CONFIG.MUTATORS[0];
+  }
+
   syncModeButtons() {
     document.querySelectorAll(".mode-btn").forEach((btn) => {
       btn.classList.toggle("selected", btn.dataset.mode === this.selectedMode);
@@ -136,7 +145,7 @@ export class CuriosityEngineGame {
     this.ui.btnFireAction.addEventListener("pointerdown", (e) => {
       e.preventDefault();
       this.ui.btnFireAction.classList.add("firing");
-      this.triggerFireAction();
+      this.triggerFireAction(false);
     });
 
     window.addEventListener("pointerup", () => {
@@ -175,8 +184,10 @@ export class CuriosityEngineGame {
 
       if (this.phase === "playing" && !this.hasOpenModal()) {
         if (code === "Space" || code === "KeyF" || code === "Enter") {
-          this.triggerFireAction();
-        } else if (code === "KeyE" || code === "ShiftLeft" || code === "ShiftRight") {
+          this.triggerFireAction(false);
+        } else if (code === "ShiftLeft" || code === "ShiftRight") {
+          this.triggerFireAction(true);
+        } else if (code === "KeyE") {
           this.triggerFocusPulse();
         }
       }
@@ -203,8 +214,13 @@ export class CuriosityEngineGame {
       }
       this.pointer.down = true;
       if (this.phase === "playing" && !this.hasOpenModal()) {
-        this.triggerFireAction();
+        const isOverdrive = e.button === 2 || e.shiftKey;
+        this.triggerFireAction(isOverdrive);
       }
+    });
+
+    this.canvas.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
     });
   }
 
@@ -269,6 +285,7 @@ export class CuriosityEngineGame {
     const clamped = Math.max(0, Math.min(this.chambers.length - 1, idx));
     this.chamberIndex = clamped;
     const spec = this.chambers[clamped];
+    this.activeMutator = this.pickMutatorForChamber(clamped);
 
     this.player.x = CONFIG.PLAYER.START_X;
     this.player.y = CONFIG.PLAYER.START_Y;
@@ -305,17 +322,23 @@ export class CuriosityEngineGame {
     }));
 
     if (announce) {
-      this.runStats.bannerText = `${spec.code}: ${spec.title.toUpperCase()}`;
-      this.runStats.bannerTimer = 2.4;
+      this.runStats.bannerText = `${spec.code} [${this.activeMutator.name.toUpperCase()}]`;
+      this.runStats.bannerTimer = 2.6;
     }
     this.updateHud();
   }
 
-  triggerFireAction() {
+  /**
+   * Fires either a standard Curiosity Probe or an Overdrive Probe (power = 2 hits,
+   * faster velocity, higher charge cost).
+   */
+  triggerFireAction(overdrive = false) {
     if (this.phase !== "playing" || this.hasOpenModal()) return;
     if (this.player.fireCooldown > 0) return;
 
-    const probeCost = CONFIG.PLAYER.PROBE_COST;
+    const useOverdrive = Boolean(overdrive) && this.player.probeCharge >= CONFIG.PLAYER.OVERDRIVE_COST;
+    const probeCost = useOverdrive ? CONFIG.PLAYER.OVERDRIVE_COST : CONFIG.PLAYER.PROBE_COST;
+
     if (this.player.probeCharge < probeCost) {
       this.spawnCallout(this.player.x, this.player.y - 26, "LOW CHARGE", "#f59e0b");
       this.sound.playTone({ freqStart: 180, freqEnd: 130, duration: 0.09, type: "sine", gainPeak: 0.08 });
@@ -323,32 +346,44 @@ export class CuriosityEngineGame {
     }
 
     this.player.probeCharge = Math.max(0, this.player.probeCharge - probeCost);
-    this.player.fireCooldown = CONFIG.PLAYER.FIRE_COOLDOWN;
+    this.player.fireCooldown = useOverdrive
+      ? CONFIG.PLAYER.OVERDRIVE_COOLDOWN
+      : CONFIG.PLAYER.FIRE_COOLDOWN;
     this.runStats.probesFired += 1;
 
     const angle = Math.atan2(this.pointer.y - this.player.y, this.pointer.x - this.player.x);
     this.player.aimAngle = angle;
 
-    const speed = CONFIG.PLAYER.PROBE_SPEED;
+    const baseSpeed = useOverdrive ? CONFIG.PLAYER.OVERDRIVE_SPEED : CONFIG.PLAYER.PROBE_SPEED;
+    const speed = baseSpeed * (this.activeMutator ? this.activeMutator.probeSpeedMult : 1);
     const muzzleDist = this.player.radius + 10;
+
     this.probes.push({
       x: this.player.x + Math.cos(angle) * muzzleDist,
       y: this.player.y + Math.sin(angle) * muzzleDist,
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
-      radius: 7,
-      life: CONFIG.PLAYER.PROBE_LIFE,
+      radius: useOverdrive ? 10 : 7,
+      power: useOverdrive ? 2 : 1,
+      overdrive: useOverdrive,
+      life: useOverdrive ? CONFIG.PLAYER.OVERDRIVE_LIFE : CONFIG.PLAYER.PROBE_LIFE,
       trail: []
     });
 
     this.spawnBurst(
       this.player.x + Math.cos(angle) * muzzleDist,
       this.player.y + Math.sin(angle) * muzzleDist,
-      "#38bdf8",
-      7,
-      120
+      useOverdrive ? "#f59e0b" : "#38bdf8",
+      useOverdrive ? 12 : 7,
+      useOverdrive ? 170 : 120
     );
-    this.sound.fireProbe();
+
+    if (useOverdrive) {
+      this.sound.playTone({ freqStart: 960, freqEnd: 240, duration: 0.19, type: "sawtooth", gainPeak: 0.13 });
+      this.spawnCallout(this.player.x, this.player.y - 28, "OVERDRIVE PROBE", "#fbbf24");
+    } else {
+      this.sound.fireProbe();
+    }
     this.updateHud();
   }
 
@@ -397,7 +432,8 @@ export class CuriosityEngineGame {
 
   addCuriosity(delta) {
     const mode = this.getModeConfig();
-    const scaled = delta * mode.curiosityGainScale;
+    const mutMult = this.activeMutator ? this.activeMutator.curiosityMult : 1;
+    const scaled = delta * mode.curiosityGainScale * mutMult;
     this.runStats.curiosity = Math.max(0, Math.min(100, this.runStats.curiosity + scaled));
     if (this.runStats.curiosity > this.runStats.peakCuriosity) {
       this.runStats.peakCuriosity = this.runStats.curiosity;
@@ -406,8 +442,9 @@ export class CuriosityEngineGame {
 
   addScore(points) {
     const mult = this.getModeConfig().scoreMultiplier;
+    const mutScoreMult = this.activeMutator ? this.activeMutator.scoreMult : 1;
     const curiosityBonus = 1 + (this.runStats.curiosity / 100) * 0.5;
-    this.runStats.score += points * mult * curiosityBonus;
+    this.runStats.score += points * mult * mutScoreMult * curiosityBonus;
   }
 
   spawnBurst(x, y, color, count, speedMax) {
@@ -442,6 +479,7 @@ export class CuriosityEngineGame {
     if (this.phase !== "playing" || this.hasOpenModal()) return;
 
     const mode = this.getModeConfig();
+    const mutator = this.activeMutator || CONFIG.MUTATORS[0];
     this.runStats.elapsedSec += dt;
 
     if (this.runStats.bannerTimer > 0) {
@@ -476,7 +514,6 @@ export class CuriosityEngineGame {
     this.player.y = Math.max(pad, Math.min(CONFIG.LOGICAL_HEIGHT - pad, this.player.y));
     this.player.aimAngle = Math.atan2(this.pointer.y - this.player.y, this.pointer.x - this.player.x);
 
-    // Update drifting anomalies
     for (const a of this.anomalies) {
       a.pulsePhase += dt * 3;
       a.flashTimer = Math.max(0, a.flashTimer - dt);
@@ -537,9 +574,9 @@ export class CuriosityEngineGame {
               break;
             }
 
-            a.hits += 1;
+            a.hits += p.power || 1;
             this.addCuriosity(8);
-            this.addScore(120);
+            this.addScore(120 * (p.power || 1));
 
             if (a.hits >= a.hitsNeeded) {
               a.resolved = true;
@@ -560,12 +597,11 @@ export class CuriosityEngineGame {
       }
 
       if (consumed) {
-        this.spawnBurst(p.x, p.y, "#38bdf8", 5, 80);
+        this.spawnBurst(p.x, p.y, p.overdrive ? "#fbbf24" : "#38bdf8", 5, 80);
         this.probes.splice(i, 1);
       }
     }
 
-    // Only non-decoy anomalies are required to open the chamber threshold
     const realAnomalies = this.anomalies.filter((a) => !a.isDecoy);
     const allResolved = realAnomalies.every((a) => a.resolved);
     if (allResolved && !this.exitUnlocked) {
@@ -592,7 +628,7 @@ export class CuriosityEngineGame {
 
     const curiosityHazardSpeedScale = 1 + (this.runStats.curiosity / 100) * 0.35;
     for (const h of this.hazards) {
-      h.angle += h.speed * curiosityHazardSpeedScale * dt;
+      h.angle += h.speed * curiosityHazardSpeedScale * mutator.hazardSpeedMult * dt;
       h.x = h.cx + Math.cos(h.angle) * h.orbitRadius;
       h.y = h.cy + Math.sin(h.angle) * h.orbitRadius;
 
@@ -726,9 +762,10 @@ export class CuriosityEngineGame {
 
     const spec = this.chambers[this.chamberIndex];
     if (spec) {
+      const mutName = this.activeMutator ? this.activeMutator.name : "Baseline Field";
       ctx.font = "600 12px ui-monospace, monospace";
       ctx.fillStyle = "rgba(143, 161, 189, 0.85)";
-      ctx.fillText(`${spec.code} — ${spec.prompt}`, 24, 28);
+      ctx.fillText(`${spec.code} [${mutName}] — ${spec.prompt}`, 24, 28);
     }
 
     const ex = this.exitPos;
@@ -827,8 +864,8 @@ export class CuriosityEngineGame {
         for (let i = 1; i < p.trail.length; i++) {
           ctx.lineTo(p.trail[i].x, p.trail[i].y);
         }
-        ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
-        ctx.lineWidth = 3;
+        ctx.strokeStyle = p.overdrive ? "rgba(251, 191, 36, 0.55)" : "rgba(56, 189, 248, 0.45)";
+        ctx.lineWidth = p.overdrive ? 4.5 : 3;
         ctx.stroke();
         ctx.restore();
       }
@@ -836,7 +873,7 @@ export class CuriosityEngineGame {
       ctx.save();
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-      ctx.fillStyle = "#7dd3fc";
+      ctx.fillStyle = p.overdrive ? "#fbbf24" : "#7dd3fc";
       ctx.fill();
       ctx.restore();
     }
@@ -910,7 +947,7 @@ export class CuriosityEngineGame {
       ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
       ctx.strokeStyle = "rgba(56, 189, 248, 0.5)";
       ctx.lineWidth = 1;
-      const bw = 560;
+      const bw = 580;
       const bh = 34;
       const bx = (w - bw) * 0.5;
       const by = 48;
