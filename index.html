@@ -1,1 +1,111 @@
-# curiosity-engine
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>CURIOSITY ENGINE // The Unanswered Room</title>
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <div id="app-shell">
+    <header id="top-hud" aria-label="Game Telemetry HUD">
+      <div class="hud-box">
+        <span class="hud-label">Chamber</span>
+        <span class="hud-value" id="hud-chamber">01 / 04</span>
+      </div>
+      <div class="hud-box">
+        <span class="hud-label">Integrity</span>
+        <span class="hud-value" id="hud-integrity">100%</span>
+        <div class="hud-bar-track"><div class="hud-bar-fill" id="bar-integrity"></div></div>
+      </div>
+      <div class="hud-box">
+        <span class="hud-label">Probe Charge</span>
+        <span class="hud-value" id="hud-probe">100%</span>
+        <div class="hud-bar-track"><div class="hud-bar-fill" id="bar-probe"></div></div>
+      </div>
+      <div class="hud-box">
+        <span class="hud-label">Curiosity</span>
+        <span class="hud-value" id="hud-curiosity">0%</span>
+        <div class="hud-bar-track"><div class="hud-bar-fill" id="bar-curiosity"></div></div>
+      </div>
+      <div class="hud-box">
+        <span class="hud-label">Score</span>
+        <span class="hud-value" id="hud-score">000000</span>
+      </div>
+      <div class="hud-box">
+        <span class="hud-label">Backend Sync</span>
+        <span class="hud-value" id="hud-sync">LOCAL-OK</span>
+      </div>
+    </header>
+
+    <main id="stage-frame">
+      <canvas id="game-canvas" width="1120" height="620"></canvas>
+
+      <section id="overlay-title" class="overlay-panel active">
+        <div class="overlay-card">
+          <div class="overlay-tag">Protocol // Unanswered Room</div>
+          <h1 class="overlay-title">CURIOSITY ENGINE</h1>
+          <p class="overlay-copy">
+            Every chamber conceals an anomaly that reacts when probed. Fire your <strong>Curiosity Probe</strong>
+            to expose hidden truths, destabilize false locks, and harvest shards—without letting unchecked curiosity
+            shatter your integrity.
+          </p>
+          <div class="mode-selector" role="group" aria-label="Difficulty Mode">
+            <button type="button" class="mode-btn" data-mode="calm">Calm Observer</button>
+            <button type="button" class="mode-btn selected" data-mode="standard">Standard Probe</button>
+            <button type="button" class="mode-btn" data-mode="volatile">Volatile Surge</button>
+          </div>
+          <button type="button" class="primary-cta" id="btn-start-run">Enter The Unanswered Room</button>
+        </div>
+      </section>
+
+      <section id="overlay-pause" class="overlay-panel">
+        <div class="overlay-card">
+          <div class="overlay-tag">Simulation Suspended</div>
+          <h2 class="overlay-title">PAUSED</h2>
+          <p class="overlay-copy">Telemetry is held in memory. Resume your run or restart the current chamber.</p>
+          <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+            <button type="button" class="primary-cta" id="btn-resume-run">Resume</button>
+            <button type="button" class="btn-ui" id="btn-restart-chamber">Reset Chamber</button>
+            <button type="button" class="btn-ui" id="btn-quit-title">Title Screen</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="overlay-end" class="overlay-panel">
+        <div class="overlay-card">
+          <div class="overlay-tag" id="end-tag">Run Concluded</div>
+          <h2 class="overlay-title" id="end-title">SIGNAL LOST</h2>
+          <p class="overlay-copy" id="end-summary">Your curiosity reached the edge of the room.</p>
+          <div class="stats-grid">
+            <div class="stat-tile"><div class="k">Final Score</div><div class="v" id="stat-score">0</div></div>
+            <div class="stat-tile"><div class="k">Peak Curiosity</div><div class="v" id="stat-curiosity">0%</div></div>
+            <div class="stat-tile"><div class="k">Anomalies Probed</div><div class="v" id="stat-probes">0</div></div>
+            <div class="stat-tile"><div class="k">Best Saved Score</div><div class="v" id="stat-best">0</div></div>
+          </div>
+          <button type="button" class="primary-cta" id="btn-play-again">Run Another Experiment</button>
+        </div>
+      </section>
+    </main>
+
+    <footer id="bottom-controls">
+      <div class="control-hints">
+        <span><span class="key-chip">WASD / Arrows</span> Move</span>
+        <span><span class="key-chip">Mouse</span> Aim</span>
+        <span><span class="key-chip">Space / F / Click</span> Fire Probe</span>
+        <span><span class="key-chip">E</span> Focus Pulse</span>
+        <span><span class="key-chip">P</span> Pause</span>
+      </div>
+      <div class="action-cluster">
+        <button type="button" class="btn-ui" id="btn-audio-toggle">Audio: ON</button>
+        <button type="button" class="btn-ui" id="btn-focus-pulse">Pulse [E]</button>
+        <button type="button" class="btn-ui" id="btn-fire-action">FIRE PROBE</button>
+      </div>
+    </footer>
+  </div>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
+
+
