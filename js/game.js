@@ -1,8 +1,9 @@
-
 import { CONFIG } from "./config.js";
 import { SoundEngine } from "./audio.js";
 import { LocalBackendStore } from "./backend.js";
 import { buildChambers } from "./chambers.js";
+import { CodexManager } from "./codex.js";
+import { AnalyticsManager } from "./analytics.js";
 
 export class CuriosityEngineGame {
   constructor() {
@@ -10,6 +11,8 @@ export class CuriosityEngineGame {
     this.ctx = this.canvas.getContext("2d");
     this.sound = new SoundEngine();
     this.backend = new LocalBackendStore();
+    this.codex = new CodexManager(this.backend);
+    this.analytics = new AnalyticsManager(this.backend);
 
     this.ui = {
       chamber: document.getElementById("hud-chamber"),
@@ -24,6 +27,8 @@ export class CuriosityEngineGame {
       overlayTitle: document.getElementById("overlay-title"),
       overlayPause: document.getElementById("overlay-pause"),
       overlayEnd: document.getElementById("overlay-end"),
+      overlayCodex: document.getElementById("overlay-codex"),
+      overlayAnalytics: document.getElementById("overlay-analytics"),
       endTag: document.getElementById("end-tag"),
       endTitle: document.getElementById("end-title"),
       endSummary: document.getElementById("end-summary"),
@@ -103,6 +108,13 @@ export class CuriosityEngineGame {
     });
   }
 
+  hasOpenModal() {
+    return Boolean(
+      (this.ui.overlayCodex && this.ui.overlayCodex.classList.contains("active")) ||
+      (this.ui.overlayAnalytics && this.ui.overlayAnalytics.classList.contains("active"))
+    );
+  }
+
   bindEvents() {
     document.querySelectorAll(".mode-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -147,13 +159,21 @@ export class CuriosityEngineGame {
       }
       this.keys.add(code);
 
+      if (code === "Escape") {
+        if (this.hasOpenModal()) {
+          this.codex.close();
+          this.analytics.close();
+          return;
+        }
+      }
+
       if (code === "KeyP" || code === "Escape") {
         if (this.phase === "playing") this.pauseGame();
         else if (this.phase === "paused") this.resumeGame();
         return;
       }
 
-      if (this.phase === "playing") {
+      if (this.phase === "playing" && !this.hasOpenModal()) {
         if (code === "Space" || code === "KeyF" || code === "Enter") {
           this.triggerFireAction();
         } else if (code === "KeyE" || code === "ShiftLeft" || code === "ShiftRight") {
@@ -182,13 +202,15 @@ export class CuriosityEngineGame {
         this.pointer.y = ((e.clientY - rect.top) / rect.height) * CONFIG.LOGICAL_HEIGHT;
       }
       this.pointer.down = true;
-      if (this.phase === "playing") {
+      if (this.phase === "playing" && !this.hasOpenModal()) {
         this.triggerFireAction();
       }
     });
   }
 
   startNewRun() {
+    this.codex.close();
+    this.analytics.close();
     this.sound.ensureContext();
     this.chambers = buildChambers();
     this.chamberIndex = 0;
@@ -205,7 +227,7 @@ export class CuriosityEngineGame {
       probesFired: 0,
       elapsedSec: 0,
       bannerTimer: 2.2,
-      bannerText: "EXPERIMENT STARTED — PROBE EVERY ANOMALY",
+      bannerText: "EXPERIMENT STARTED — PROBE EVERY REAL ANOMALY",
       pulseWave: null
     };
 
@@ -230,6 +252,8 @@ export class CuriosityEngineGame {
   }
 
   returnToTitle() {
+    this.codex.close();
+    this.analytics.close();
     this.phase = "title";
     this.setOverlay("title");
     this.updateHud();
@@ -258,9 +282,13 @@ export class CuriosityEngineGame {
 
     this.anomalies = spec.anomalies.map((a) => ({
       ...a,
+      baseX: a.x,
+      baseY: a.y,
       hits: 0,
       resolved: false,
+      isDecoy: Boolean(a.isDecoy),
       pulsePhase: Math.random() * Math.PI * 2,
+      driftPhase: a.drift ? a.drift.phase || 0 : 0,
       flashTimer: 0
     }));
 
@@ -284,7 +312,7 @@ export class CuriosityEngineGame {
   }
 
   triggerFireAction() {
-    if (this.phase !== "playing") return;
+    if (this.phase !== "playing" || this.hasOpenModal()) return;
     if (this.player.fireCooldown > 0) return;
 
     const probeCost = CONFIG.PLAYER.PROBE_COST;
@@ -325,7 +353,7 @@ export class CuriosityEngineGame {
   }
 
   triggerFocusPulse() {
-    if (this.phase !== "playing") return;
+    if (this.phase !== "playing" || this.hasOpenModal()) return;
     if (this.player.pulseCooldown > 0) return;
     if (this.player.probeCharge < CONFIG.PLAYER.PULSE_COST) {
       this.spawnCallout(this.player.x, this.player.y - 26, "NEED 35% CHARGE", "#f59e0b");
@@ -351,7 +379,7 @@ export class CuriosityEngineGame {
       const dist = Math.hypot(a.x - this.player.x, a.y - this.player.y);
       if (dist <= CONFIG.PLAYER.PULSE_RADIUS) {
         a.flashTimer = 0.45;
-        this.spawnBurst(a.x, a.y, "#a78bfa", 8, 110);
+        this.spawnBurst(a.x, a.y, a.isDecoy ? "#fb7185" : "#a78bfa", 8, 110);
       }
     }
 
@@ -411,7 +439,7 @@ export class CuriosityEngineGame {
   }
 
   stepSimulation(dt) {
-    if (this.phase !== "playing") return;
+    if (this.phase !== "playing" || this.hasOpenModal()) return;
 
     const mode = this.getModeConfig();
     this.runStats.elapsedSec += dt;
@@ -448,6 +476,21 @@ export class CuriosityEngineGame {
     this.player.y = Math.max(pad, Math.min(CONFIG.LOGICAL_HEIGHT - pad, this.player.y));
     this.player.aimAngle = Math.atan2(this.pointer.y - this.player.y, this.pointer.x - this.player.x);
 
+    // Update drifting anomalies
+    for (const a of this.anomalies) {
+      a.pulsePhase += dt * 3;
+      a.flashTimer = Math.max(0, a.flashTimer - dt);
+      if (a.drift && !a.resolved) {
+        a.driftPhase += a.drift.speed * dt;
+        const offset = Math.sin(a.driftPhase) * a.drift.range;
+        if (a.drift.axis === "x") {
+          a.x = a.baseX + offset;
+        } else {
+          a.y = a.baseY + offset;
+        }
+      }
+    }
+
     if (this.runStats.pulseWave) {
       const pw = this.runStats.pulseWave;
       pw.radius += 540 * dt;
@@ -483,8 +526,18 @@ export class CuriosityEngineGame {
           const dist = Math.hypot(p.x - a.x, p.y - a.y);
           if (dist <= a.radius + p.radius) {
             consumed = true;
-            a.hits += 1;
             a.flashTimer = 0.25;
+
+            if (a.isDecoy) {
+              this.addCuriosity(4);
+              this.backend.unlockCodex(a.id);
+              this.spawnBurst(a.x, a.y, "#fb7185", 10, 120);
+              this.spawnCallout(a.x, a.y - a.radius - 8, `${a.label} IS A DECOY`, "#fb7185");
+              this.sound.probeHit(false);
+              break;
+            }
+
+            a.hits += 1;
             this.addCuriosity(8);
             this.addScore(120);
 
@@ -512,7 +565,9 @@ export class CuriosityEngineGame {
       }
     }
 
-    const allResolved = this.anomalies.every((a) => a.resolved);
+    // Only non-decoy anomalies are required to open the chamber threshold
+    const realAnomalies = this.anomalies.filter((a) => !a.isDecoy);
+    const allResolved = realAnomalies.every((a) => a.resolved);
     if (allResolved && !this.exitUnlocked) {
       this.exitUnlocked = true;
       this.addScore(500);
@@ -557,11 +612,6 @@ export class CuriosityEngineGame {
           }
         }
       }
-    }
-
-    for (const a of this.anomalies) {
-      a.pulsePhase += dt * 3;
-      a.flashTimer = Math.max(0, a.flashTimer - dt);
     }
 
     if (this.exitUnlocked) {
@@ -614,7 +664,7 @@ export class CuriosityEngineGame {
     this.ui.endTag.textContent = victory ? "ALL CHAMBERS RESOLVED" : "INTEGRITY DEPLETED";
     this.ui.endTitle.textContent = victory ? "THE ROOM ANSWERS" : "SIGNAL TERMINATED";
     this.ui.endSummary.textContent = victory
-      ? "Every anomaly in the sequence was probed and extracted with your curiosity intact."
+      ? "Every real anomaly in the sequence was probed and extracted with your curiosity intact."
       : "Anomalies and volatile echoes overwhelmed your integrity before all thresholds opened.";
 
     this.ui.statScore.textContent = finalScore.toLocaleString();
@@ -734,6 +784,9 @@ export class CuriosityEngineGame {
       } else if (a.flashTimer > 0) {
         ctx.fillStyle = "rgba(245, 158, 11, 0.32)";
         ctx.strokeStyle = "#fde047";
+      } else if (a.drift) {
+        ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
+        ctx.strokeStyle = "#38bdf8";
       } else {
         ctx.fillStyle = "rgba(167, 139, 250, 0.14)";
         ctx.strokeStyle = "#a78bfa";
@@ -749,7 +802,8 @@ export class CuriosityEngineGame {
 
       ctx.font = "600 10px ui-monospace, monospace";
       ctx.fillStyle = a.resolved ? "#10b981" : "#cbd5e1";
-      ctx.fillText(a.resolved ? "RESOLVED" : `${a.hits}/${a.hitsNeeded}`, a.x, a.y + 12);
+      const statusText = a.resolved ? "RESOLVED" : a.isDecoy ? "SIGNAL?" : `${a.hits}/${a.hitsNeeded}`;
+      ctx.fillText(statusText, a.x, a.y + 12);
       ctx.restore();
     }
 
@@ -811,7 +865,7 @@ export class CuriosityEngineGame {
       ctx.restore();
     }
 
-    if (this.phase === "playing") {
+    if (this.phase === "playing" && !this.hasOpenModal()) {
       ctx.save();
       ctx.setLineDash([4, 6]);
       ctx.strokeStyle = "rgba(56, 189, 248, 0.25)";
@@ -856,7 +910,7 @@ export class CuriosityEngineGame {
       ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
       ctx.strokeStyle = "rgba(56, 189, 248, 0.5)";
       ctx.lineWidth = 1;
-      const bw = 540;
+      const bw = 560;
       const bh = 34;
       const bx = (w - bw) * 0.5;
       const by = 48;
