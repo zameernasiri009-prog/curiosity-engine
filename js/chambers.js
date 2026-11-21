@@ -70,7 +70,7 @@ export function buildChambers() {
       index: 4,
       code: "CHAMBER-04 // FINAL THRESHOLD",
       title: "The Core Question",
-      prompt: "Fourth sector: resolve every core anomaly to unseal the exit toward the deeper archive.",
+      prompt: "Final chamber: resolve every core anomaly to unseal the exit and answer the room.",
       exitPos: { x: 1015, y: 310 },
       anomalies: [
         { id: "c4-a1", x: 380, y: 200, radius: 28, kind: "omega_core", label: "PRIME-I", hitsNeeded: 2, curiosityReward: 25 },
@@ -88,130 +88,6 @@ export function buildChambers() {
         { id: "c4-h1", cx: 490, cy: 310, orbitRadius: 110, speed: 2.25, angle: 0.2, radius: 15, damage: 18 },
         { id: "c4-h2", cx: 705, cy: 310, orbitRadius: 110, speed: -2.25, angle: 2.6, radius: 15, damage: 18 },
         { id: "c4-h3", cx: 600, cy: 310, orbitRadius: 165, speed: 1.55, angle: 4.1, radius: 16, damage: 18 }
-      ]
-    },
-    {
-      index: 5,
-      code: "CHAMBER-05 // DRIFTING MIRAGE",
-      title: "The False Reflection",
-      prompt: "Drifting anomalies glide across the room while decoys mimic real locks. Only true cores count toward exit.",
-      exitPos: { x: 1010, y: 200 },
-      anomalies: [
-        {
-          id: "c5-a1",
-          x: 430,
-          y: 220,
-          radius: 28,
-          kind: "drifting_node",
-          label: "MIRAGE-1",
-          hitsNeeded: 2,
-          curiosityReward: 28,
-          drift: { axis: "y", range: 85, speed: 1.9, phase: 0 }
-        },
-        {
-          id: "c5-a2",
-          x: 680,
-          y: 390,
-          radius: 28,
-          kind: "drifting_node",
-          label: "MIRAGE-2",
-          hitsNeeded: 2,
-          curiosityReward: 28,
-          drift: { axis: "y", range: 85, speed: 1.9, phase: Math.PI }
-        },
-        {
-          id: "c5-a3",
-          x: 555,
-          y: 220,
-          radius: 26,
-          kind: "decoy_node",
-          label: "DECOY-A",
-          hitsNeeded: 99,
-          curiosityReward: 5,
-          isDecoy: true
-        }
-      ],
-      shards: [
-        { id: "c5-s1", x: 310, y: 150, value: 550 },
-        { id: "c5-s2", x: 555, y: 460, value: 600 },
-        { id: "c5-s3", x: 840, y: 320, value: 650 }
-      ],
-      hazards: [
-        { id: "c5-h1", cx: 555, cy: 310, orbitRadius: 95, speed: 2.3, angle: 0.7, radius: 15, damage: 18 },
-        { id: "c5-h2", cx: 790, cy: 205, orbitRadius: 75, speed: -2.1, angle: 1.9, radius: 14, damage: 17 }
-      ]
-    },
-    {
-      index: 6,
-      code: "CHAMBER-06 // SOVEREIGN ARCHIVE",
-      title: "The Final Question",
-      prompt: "Archive finale: probe both drifting cipher cores and the Sovereign Core while ignoring decoys.",
-      exitPos: { x: 1015, y: 310 },
-      anomalies: [
-        {
-          id: "c6-a1",
-          x: 420,
-          y: 190,
-          radius: 28,
-          kind: "drifting_node",
-          label: "CIPHER-I",
-          hitsNeeded: 3,
-          curiosityReward: 30,
-          drift: { axis: "x", range: 70, speed: 1.7, phase: 0.3 }
-        },
-        {
-          id: "c6-a2",
-          x: 420,
-          y: 440,
-          radius: 28,
-          kind: "drifting_node",
-          label: "CIPHER-II",
-          hitsNeeded: 3,
-          curiosityReward: 30,
-          drift: { axis: "x", range: 70, speed: 1.7, phase: 3.4 }
-        },
-        {
-          id: "c6-a3",
-          x: 740,
-          y: 310,
-          radius: 36,
-          kind: "omega_core",
-          label: "SOVEREIGN",
-          hitsNeeded: 3,
-          curiosityReward: 40
-        },
-        {
-          id: "c6-decoy-1",
-          x: 600,
-          y: 175,
-          radius: 25,
-          kind: "decoy_node",
-          label: "ECHO-0",
-          hitsNeeded: 99,
-          curiosityReward: 4,
-          isDecoy: true
-        },
-        {
-          id: "c6-decoy-2",
-          x: 600,
-          y: 445,
-          radius: 25,
-          kind: "decoy_node",
-          label: "ECHO-9",
-          hitsNeeded: 99,
-          curiosityReward: 4,
-          isDecoy: true
-        }
-      ],
-      shards: [
-        { id: "c6-s1", x: 265, y: 310, value: 700 },
-        { id: "c6-s2", x: 585, y: 310, value: 800 },
-        { id: "c6-s3", x: 875, y: 175, value: 850 }
-      ],
-      hazards: [
-        { id: "c6-h1", cx: 520, cy: 310, orbitRadius: 105, speed: 2.4, angle: 0.1, radius: 15, damage: 19 },
-        { id: "c6-h2", cx: 740, cy: 310, orbitRadius: 105, speed: -2.4, angle: 2.4, radius: 15, damage: 19 },
-        { id: "c6-h3", cx: 880, cy: 430, orbitRadius: 75, speed: 2.2, angle: 1.2, radius: 14, damage: 18 }
       ]
     }
   ];
