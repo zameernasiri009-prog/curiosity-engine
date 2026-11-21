@@ -121,4 +121,3 @@ export class LocalBackendStore {
     return true;
   }
 }
-
